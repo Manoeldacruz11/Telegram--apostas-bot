@@ -1,4 +1,5 @@
-# Telegram--apostas-bot
+python-telegram-bot==20.3
+apscheduler==3.10.4# Telegram--apostas-bot
  import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
