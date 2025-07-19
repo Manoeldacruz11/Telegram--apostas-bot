@@ -1,4 +1,4 @@
-python-telegram-bot==20.3
+worker: python main.pypython-telegram-bot==20.3
 apscheduler==3.10.4# Telegram--apostas-bot
  import asyncio
 from telegram import Update
