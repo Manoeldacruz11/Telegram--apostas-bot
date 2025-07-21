@@ -3,7 +3,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-TOKEN = os.getenv("TOKEN8186930957:AAHIXGL-860rIhu_vFOs7R0L0qk4U4BhIvM")
+TOKEN = os.getenv"8186930957:AAHIXGL-860rIhu_vFOs7R0L0qk4U4BhIvM"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
