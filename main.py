@@ -1,50 +1,46 @@
 import os
-import asyncio
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    ContextTypes
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-TOKEN = os.getenv("8186930957:AAHIXGL-860rIhu_vFOs7R0L0qk4U4BhIvM")  # Ou coloque direto entre aspas se quiser testar
+TOKEN = os.getenv("8186930957:AAHIXGL-860rIhu_vFOs7R0L0qk4U4BhIvM")
 
-# /start ou /registrar
+# Função /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_chat.id
     if update.effective_chat.type != "private":
-        return
-    users = context.bot_data.setdefault("users", set())
-    users.add(user_id)
-    await update.message.reply_text("✅ Registrado para receber apostas seguras!")
+        return  # só responde em chats privados
 
-# Enviar apostas a cada 15 minutos
+    context.bot_data.setdefault("users", set()).add(update.effective_chat.id)
+    await update.message.reply_text("✅ Você está registrado para receber apostas seguras!")
+
+# Envia apostas a cada 15 minutos
 async def enviar_apostas(context: ContextTypes.DEFAULT_TYPE):
     apostas = [
-        "🔔 Jogo 1 – Mais de 0.5 gol no 1º tempo",
-        "🔔 Jogo 2 – Mais de 3.5 escanteios no 1º tempo"
+        "🔔 Santos x Palmeiras – Mais de 0.5 gol no 1º tempo ⚽",
+        "🔔 Real Madrid x Barcelona – Mais de 3.5 escanteios no 1º tempo 🏟️"
     ]
-    for user in context.bot_data.get("users", []):
-        for msg in apostas:
+    for user_id in context.bot_data.get("users", []):
+        for aposta in apostas:
             try:
-                await context.bot.send_message(chat_id=user, text=msg)
+                await context.bot.send_message(chat_id=user_id, text=aposta)
             except Exception as e:
-                print(f"Erro ao enviar para {user}: {e}")
+                print(f"Erro ao enviar para {user_id}: {e}")
 
-# Principal
-async def main():
+# Inicia o bot
+def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
+    # Comandos
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("registrar", start))
 
+    # Agenda as apostas
     scheduler = AsyncIOScheduler()
     scheduler.add_job(enviar_apostas, "interval", minutes=15, args=[app])
     scheduler.start()
 
-    print("🤖 Bot rodando 24h...")
-    await app.run_polling()
+    print("✅ Bot iniciado com sucesso!")
+    app.run_polling()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
