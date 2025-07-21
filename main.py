@@ -3,45 +3,37 @@ import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from functools import partial
 
-# 🔧 Substitua diretamente se quiser (ou defina no Render: TOKEN=seu_token)
-TOKEN = os.getenv("TOKEN", "8186930957:AAHIXGL-860rIhu_vFOs7R0L0qk4U4BhIvM")
+# Use diretamente seu token, se quiser
+TOKEN = os.getenv("TOKEN") or "8186930957:AAHIXGL-860rIhu_vFOs7R0L0qk4U4BhIvM"
 
-# Lista de usuários que registraram o bot
-users = set()
-
+# Função /start e /registrar
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🤖 Bot ativo! Use /registrar para receber apostas.")
+    context.bot_data.setdefault("users", set()).add(update.effective_chat.id)
+    await update.message.reply_text("🤖 Bot ativo! Você receberá apostas no privado a cada 15 minutos.")
 
-async def registrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    users.add(update.effective_chat.id)
-    await update.message.reply_text("✅ Registrado! Você receberá as apostas automáticas.")
-
-async def enviar_apostas(context: ContextTypes.DEFAULT_TYPE):
+# Função que envia apostas para os usuários registrados
+async def enviar_apostas(app):
     apostas = [
         "🔔 Santos x Palmeiras – Mais de 0.5 gol no 1T",
         "🔔 Real x Barça – Mais de 3.5 escanteios no 1T"
     ]
-    for user_id in users:
+    users = app.bot_data.get("users", set())
+    for user in users:
         for msg in apostas:
-            try:
-                await context.bot.send_message(chat_id=user_id, text=msg)
-            except Exception as e:
-                print(f"Erro ao enviar para {user_id}: {e}")
+            await app.bot.send_message(chat_id=user, text=msg)
 
+# Função principal
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # ⏰ Agendador que envia apostas a cada 15 minutos
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(enviar_apostas, "interval", minutes=15, args=[app])
+    scheduler.add_job(partial(enviar_apostas, app), "interval", minutes=15)
     scheduler.start()
 
-    # 🔘 Comandos
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("registrar", registrar))
-
-    print("Bot rodando...")
+    app.add_handler(CommandHandler("registrar", start))
     app.run_polling()
 
 if __name__ == "__main__":
