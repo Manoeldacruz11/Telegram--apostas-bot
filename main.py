@@ -1,16 +1,14 @@
 import logging
-import requests
-from telegram import Bot, Update
-from telegram.ext import CommandHandler, ApplicationBuilder
 import asyncio
+from telegram import Bot
+from telegram.ext import ApplicationBuilder, CommandHandler
 
-# Seu token fornecido pelo BotFather
-TOKEN = "8186930957:AAHIXGL-860rIhu_vFOs7R0L0qk4U4BhIvM"  # Token do seu bot
-CHAT_ID = None  # Será preenchido no /start
+TOKEN = "8186930957:AAHIXGL-860rIhu_vFOs7R0L0qk4U4BhIvM"
+CHAT_ID = "SEU_CHAT_ID_AQUI"  # Substitua pelo seu ID pessoal ou de grupo
 
-# Exemplo de função que simula uma análise segura (pode futuramente puxar de uma API real)
+# Simulando apostas seguras
 def encontrar_apostas_seguras():
-    apostas = [
+    return [
         {
             "jogo": "Flamengo x Santos",
             "mercado": "+0.5 Gol 1º Tempo",
@@ -30,49 +28,43 @@ def encontrar_apostas_seguras():
             "link": "https://www.sportingbet.com/"
         }
     ]
-    return apostas
 
-async def enviar_apostas(bot: Bot, chat_id: int):
+# Envia as apostas
+async def enviar_apostas(bot: Bot):
     apostas = encontrar_apostas_seguras()
     for aposta in apostas:
-        mensagem = (
-            f"🔥 *Aposta Segura Identificada!*\n\n"
+        msg = (
+            f"🔥 *Oportunidade Detectada!*\n\n"
             f"*Jogo:* {aposta['jogo']}\n"
             f"*Mercado:* {aposta['mercado']}\n"
             f"*Probabilidade:* {aposta['chance']}\n"
             f"*Odd:* {aposta['odd']}\n"
             f"*Horário:* {aposta['hora']}\n"
             f"*Liga:* {aposta['liga']}\n\n"
-            f"📌 [Aposte agora na Sportingbet]({aposta['link']})"
+            f"📌 [Aposte agora]({aposta['link']})"
         )
-        await bot.send_message(chat_id=chat_id, text=mensagem, parse_mode="Markdown")
+        await bot.send_message(chat_id=CHAT_ID, text=msg, parse_mode="Markdown")
 
-# /start: Registra o chat privado para envio
-async def start(update: Update, context):
-    global CHAT_ID
-    if update.effective_chat.type != "private":
-        return await update.message.reply_text("⚠️ Só funciono no privado!")
-    CHAT_ID = update.effective_chat.id
-    await update.message.reply_text("✅ Você foi registrado. Enviarei apostas seguras aqui!")
+# Comando /start
+async def start(update, context):
+    await update.message.reply_text("👋 Bot de apostas iniciado! Enviarei boas oportunidades aqui!")
 
-# Início do bot
+# Função principal
 async def main():
+    logging.basicConfig(level=logging.INFO)
     app = ApplicationBuilder().token(TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("registrar", start))
 
-    # Início do bot
-    bot = Bot(token=TOKEN)
-    print("✅ Bot rodando...")
+    # Envia apostas a cada hora
+    async def loop_apostas():
+        bot = Bot(token=TOKEN)
+        while True:
+            await enviar_apostas(bot)
+            await asyncio.sleep(3600)
 
-    # Loop para enviar apostas de tempos em tempos
-    while True:
-        if CHAT_ID:
-            await enviar_apostas(bot, CHAT_ID)
-        await asyncio.sleep(3600)  # Espera 1 hora até próxima verificação
-
+    asyncio.create_task(loop_apostas())
     await app.run_polling()
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+if __name__ == "__main__":
     asyncio.run(main())
