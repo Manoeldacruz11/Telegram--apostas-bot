@@ -1,20 +1,19 @@
 import logging
-import asyncio
+import requests
 from telegram import Bot, Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import CommandHandler, ApplicationBuilder
+import asyncio
 
-# Token do seu bot (não compartilhe com ninguém!)
-TOKEN = "8186930957:AAHIXGL-860rIhu_vFOs7R0L0qk4U4BhIvM"
+# Seu token fornecido pelo BotFather
+TOKEN = "8186930957:AAHIXGL-860rIhu_vFOs7R0L0qk4U4BhIvM"  # Token do seu bot
+CHAT_ID = None  # Será preenchido no /start
 
-# Lista de usuários registrados
-usuarios_registrados = set()
-
-# Apostas simuladas da casa Sportingbet
-def obter_apostas_sportingbet():
-    return [
+# Exemplo de função que simula uma análise segura (pode futuramente puxar de uma API real)
+def encontrar_apostas_seguras():
+    apostas = [
         {
             "jogo": "Flamengo x Santos",
-            "mercado": "Mais de 0.5 Gol no 1º Tempo",
+            "mercado": "+0.5 Gol 1º Tempo",
             "chance": "87%",
             "odd": "1.53",
             "hora": "19:30",
@@ -23,7 +22,7 @@ def obter_apostas_sportingbet():
         },
         {
             "jogo": "Chelsea x Arsenal",
-            "mercado": "Mais de 3.5 Escanteios no 1º Tempo",
+            "mercado": "+3.5 Escanteios 1º Tempo",
             "chance": "83%",
             "odd": "1.58",
             "hora": "16:00",
@@ -31,55 +30,49 @@ def obter_apostas_sportingbet():
             "link": "https://www.sportingbet.com/"
         }
     ]
+    return apostas
 
-# Comando /start e /registrar
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def enviar_apostas(bot: Bot, chat_id: int):
+    apostas = encontrar_apostas_seguras()
+    for aposta in apostas:
+        mensagem = (
+            f"🔥 *Aposta Segura Identificada!*\n\n"
+            f"*Jogo:* {aposta['jogo']}\n"
+            f"*Mercado:* {aposta['mercado']}\n"
+            f"*Probabilidade:* {aposta['chance']}\n"
+            f"*Odd:* {aposta['odd']}\n"
+            f"*Horário:* {aposta['hora']}\n"
+            f"*Liga:* {aposta['liga']}\n\n"
+            f"📌 [Aposte agora na Sportingbet]({aposta['link']})"
+        )
+        await bot.send_message(chat_id=chat_id, text=mensagem, parse_mode="Markdown")
+
+# /start: Registra o chat privado para envio
+async def start(update: Update, context):
+    global CHAT_ID
     if update.effective_chat.type != "private":
-        return
-    user_id = update.effective_chat.id
-    usuarios_registrados.add(user_id)
-    await update.message.reply_text("✅ Você foi registrado para receber apostas seguras da Sportingbet!")
+        return await update.message.reply_text("⚠️ Só funciono no privado!")
+    CHAT_ID = update.effective_chat.id
+    await update.message.reply_text("✅ Você foi registrado. Enviarei apostas seguras aqui!")
 
-# Função para enviar apostas para os usuários
-async def enviar_apostas(bot: Bot):
-    apostas = obter_apostas_sportingbet()
-    for user_id in usuarios_registrados:
-        for aposta in apostas:
-            mensagem = (
-                f"🔥 *Oportunidade Sportingbet!*\n\n"
-                f"*Jogo:* {aposta['jogo']}\n"
-                f"*Mercado:* {aposta['mercado']}\n"
-                f"*Probabilidade:* {aposta['chance']}\n"
-                f"*Odd:* {aposta['odd']}\n"
-                f"*Horário:* {aposta['hora']}\n"
-                f"*Liga:* {aposta['liga']}\n\n"
-                f"👉 [Apostar na Sportingbet]({aposta['link']})"
-            )
-            try:
-                await bot.send_message(chat_id=user_id, text=mensagem, parse_mode="Markdown")
-            except Exception as e:
-                logging.error(f"Erro ao enviar para {user_id}: {e}")
-
-# Função principal
+# Início do bot
 async def main():
-    logging.basicConfig(level=logging.INFO)
     app = ApplicationBuilder().token(TOKEN).build()
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("registrar", start))
 
+    # Início do bot
     bot = Bot(token=TOKEN)
+    print("✅ Bot rodando...")
 
-    async def loop_envio():
-        while True:
-            await enviar_apostas(bot)
-            await asyncio.sleep(3600)  # 1 hora
+    # Loop para enviar apostas de tempos em tempos
+    while True:
+        if CHAT_ID:
+            await enviar_apostas(bot, CHAT_ID)
+        await asyncio.sleep(3600)  # Espera 1 hora até próxima verificação
 
-    # Inicia o loop de envio em segundo plano
-    asyncio.create_task(loop_envio())
-
-    print("🤖 Bot rodando 24h...")
     await app.run_polling()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
